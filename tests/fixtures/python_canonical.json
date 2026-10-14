@@ -1,0 +1,20 @@
+{
+ "config": {
+  "provider": "google",
+  "model_requested": "gemini-flash-latest",
+  "temperature": 0,
+  "seed": 7,
+  "top_k": "n/a",
+  "stop": [],
+  "nested": {
+   "b": 1,
+   "a": "é—x"
+  },
+  "flag": true,
+  "none": null
+ },
+ "canonical": "{\"flag\":true,\"model_requested\":\"gemini-flash-latest\",\"nested\":{\"a\":\"é—x\",\"b\":1},\"none\":null,\"provider\":\"google\",\"seed\":7,\"stop\":[],\"temperature\":0,\"top_k\":\"n/a\"}",
+ "sha256": "277fa87ef737ab1f7632498fca9ac7fe8b1bcd5ae2db11861100d1a23b74b4a4",
+ "prompt_sha256": "dbca576a5da1a2bc5f1f3632c0ad44843f39501fa079a64b63eb80158d98a592",
+ "rendered_sha256": "a89da70a6ea0058e4c01dd9b12fa52885ad91c5e9e4cdb2287406923f5fe731d"
+}

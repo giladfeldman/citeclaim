@@ -1,0 +1,35 @@
+{
+  "name": "citeclaim",
+  "version": "0.1.0",
+  "description": "Citation-claim fidelity checks: does a manuscript's citing sentence agree with the cited source's abstract? Evidence-scoped verdicts, per-source grouping, verbatim-quote guard, injected model client.",
+  "license": "MIT",
+  "author": "Gilad Feldman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/giladfeldman/citeclaim.git"
+  },
+  "homepage": "https://github.com/giladfeldman/citeclaim#readme",
+  "keywords": ["citations", "citation-accuracy", "miscitation", "meta-science", "llm-evaluation", "open-science"],
+  "engines": { "node": ">=18.0.0" },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
+  "files": ["dist", "prompts"],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.4.0",
+    "rimraf": "^5.0.0"
+  }
+}

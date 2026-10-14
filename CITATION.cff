@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use citeclaim in your research, please cite it as below."
+type: software
+title: "citeclaim: citation-claim fidelity checks against cited abstracts"
+version: "0.1.0"
+license: MIT
+repository-code: "https://github.com/giladfeldman/citeclaim"
+authors:
+  - family-names: Feldman
+    given-names: Gilad
+    affiliation: University of Innsbruck
+keywords:
+  - citations
+  - citation accuracy
+  - miscitation
+  - meta-science
