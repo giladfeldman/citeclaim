@@ -99,6 +99,22 @@ minimal-edit perturbations; synthetic results are an upper bound for real
 manuscripts. Results and the model each figure applies to are published with
 the benchmark, not here, because they change when the model changes.
 
+### Recommended free model (measured October 2026)
+
+`nvidia/nemotron-3-ultra-550b-a55b` on NVIDIA's free hosted API (thinking off). It met every
+pre-registered pass bar on a held-out benchmark of 589 citation-check tasks, on two
+independent repeats; every other free model measured either missed a bar or had too small a
+free daily allowance to finish. Results: accuracy 0.84 on both, and
+a contradiction raised on 4-5% of correct citations. Judging all of a source's citing sentences
+in one call was as accurate as one call per sentence. The figures hold for that model at that
+time only; re-measure after any model change.
+
+The free endpoint is not reliable. In the same week it rate-limited per model (HTTP 429), was
+sometimes overloaded (HTTP 503), gave no answer for hours at a time, and for about a day
+returned HTTP 404 for the model. Your `LlmClient` should retry with backoff and send one
+request stream per model; a call that still fails comes back as `llm_failed` with reason
+`llm_unavailable`, never as a verdict, so tell the user the check could not run.
+
 ## License
 
 MIT. See `LICENSE`.
