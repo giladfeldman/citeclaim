@@ -1,6 +1,6 @@
 {
   "name": "citeclaim",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Citation-claim fidelity checks: does a manuscript's citing sentence agree with the cited source's abstract? Evidence-scoped verdicts, per-source grouping, verbatim-quote guard, injected model client.",
   "license": "MIT",
   "author": "Gilad Feldman",

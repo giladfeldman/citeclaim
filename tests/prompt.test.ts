@@ -59,4 +59,11 @@ describe('version', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
     expect(LIBRARY_VERSION).toBe(pkg.version);
   });
+
+  it('CITATION.cff version equals package.json version', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+    const m = /^version:\s*"?([^"\s]+)"?\s*$/m.exec(readFileSync('CITATION.cff', 'utf8'));
+    expect(m).not.toBeNull();
+    expect(m![1]).toBe(pkg.version);
+  });
 });

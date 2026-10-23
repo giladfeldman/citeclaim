@@ -5,3 +5,6 @@ dist/
 # Local Claude Code skills and correspondence: internal, never published (public repo)
 .claude/
 communications/
+
+# Local issue tracker; never published
+TODO.md

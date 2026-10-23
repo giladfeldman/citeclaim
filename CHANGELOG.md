@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.1 (2026-10-23)
+
+Documentation only: no behaviour, prompt or API change. Apart from this changelog and the README,
+the only differences from v0.1.0 are the version number (`package.json`, `LIBRARY_VERSION` in
+`src/version.ts`, `CITATION.cff`) and a test that keeps `CITATION.cff` in step with `package.json`.
+
+- README: the recommended free model for `checkClaims` (measured October 2026 on a held-out
+  benchmark of 589 tasks), and how unreliable its free endpoint was (HTTP 429/503/404), with the
+  advice to retry with backoff and show `llm_unavailable` as "could not run", never as a verdict.
+- README: the install line pins `#v0.1.1`.
+- Why a release for a README change: consumers pin a tag, and an untagged commit after v0.1.0
+  read as unreleased work to tools that compare a package with its tags. Consumers need not repin; v0.1.0
+  and v0.1.1 behave the same.
+
 ## v0.1.0 (2026-10-14)
 
 First release.

@@ -57,7 +57,7 @@ Crossref, OpenAlex, Europe PMC) and pass them in as `SourceAbstract` objects.
 ## Install
 
 ```bash
-npm install github:giladfeldman/citeclaim#v0.1.0
+npm install github:giladfeldman/citeclaim#v0.1.1
 ```
 
 ## Use
