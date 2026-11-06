@@ -115,10 +115,6 @@ returned HTTP 404 for the model. Your `LlmClient` should retry with backoff and 
 request stream per model; a call that still fails comes back as `llm_failed` with reason
 `llm_unavailable`, never as a verdict, so tell the user the check could not run.
 
-## License
-
-MIT. See `LICENSE`.
-
 <!-- license-citation:start -->
 ## License and citation
 
