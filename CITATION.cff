@@ -3,11 +3,12 @@ message: "If you use citeclaim in your research, please cite it as below."
 type: software
 title: "citeclaim: citation-claim fidelity checks against cited abstracts"
 version: "0.1.1"
-license: MIT
+license: AGPL-3.0-only
 repository-code: "https://github.com/giladfeldman/citeclaim"
 authors:
   - family-names: Feldman
     given-names: Gilad
+    orcid: "https://orcid.org/0000-0003-2812-6599"
     affiliation: University of Innsbruck
 keywords:
   - citations
