@@ -26,6 +26,13 @@ re-run important checks with a stronger model and read the source.
   characters is sent to a model. Everything else comes back `not_assessed` with
   a typed reason (`link_not_matched`, `multi_source_citation`, `no_doi`,
   `no_citing_sentence`, `no_abstract`).
+- **DOIs.** One reader (`normalizeDoi`) handles the citation's DOI, the keys of
+  the abstracts map and each abstract's own DOI: whitespace, a resolver URL
+  (`https://doi.org/`, `dx.`, `www.`, bare `doi.org/`), a `doi:` label and
+  percent-encoding are removed and case is ignored, so a map keyed
+  `https://doi.org/10.1234/ABC` serves a citation whose DOI is `10.1234/abc`.
+  Map keys that are not a DOI, and two keys for one DOI with different abstract
+  text (neither is used), are counted in `summary.abstractKeys`.
 - **Per-source grouping.** All eligible citations of one source are judged in
   one call (the abstract is sent once; each sentence still gets its own
   verdict). Sources cited more than `maxGroupSize` times (default 6) are split.
@@ -57,7 +64,7 @@ Crossref, OpenAlex, Europe PMC) and pass them in as `SourceAbstract` objects.
 ## Install
 
 ```bash
-npm install github:giladfeldman/citeclaim#v0.1.1
+npm install github:giladfeldman/citeclaim#v0.2.0
 ```
 
 ## Use
@@ -82,7 +89,8 @@ const abstracts = new Map([['10.1234/abc', { doi: '10.1234/abc', title: '...', y
 const result = await checkClaims(citations, abstracts, client, { maxGroupSize: 6 });
 // result.items[i]: { status, verdict, reason, evidenceQuote, evidenceSpan, rationale, ... }
 // result.calls[j]: { promptId, promptSha256, renderedPromptSha256, callConfigSha256, servedModel, ... }
-// result.summary:  { citations, eligible, judged, byVerdict, byReason, calls }
+// result.summary:  { citations, eligible, judged, byVerdict, byReason, calls,
+//                    abstractKeys: { given, unreadable, conflicting } }
 ```
 
 ## Prompt
@@ -128,6 +136,6 @@ Versions released before 2026-11-06 were licensed under MIT and remain available
 
 **How to cite.** If you use this software in research, please cite it. GitHub's *Cite this repository* button (from [CITATION.cff](CITATION.cff)) gives APA and BibTeX. In APA style:
 
-> Feldman, G. (2026). *citeclaim: citation-claim fidelity checks against cited abstracts* (Version 0.1.1) [Computer software]. https://github.com/giladfeldman/citeclaim#readme
+> Feldman, G. (2026). *citeclaim: citation-claim fidelity checks against cited abstracts* (Version 0.2.0) [Computer software]. https://github.com/giladfeldman/citeclaim#readme
 
 <!-- license-citation:end -->

@@ -148,6 +148,12 @@ export interface CheckSummary {
   byVerdict: Record<Verdict, number>;
   byReason: Partial<Record<AbstentionReason, number>>;
   calls: number;
+  /**
+   * What happened to the host's abstracts map: entries given, keys not readable as a
+   * DOI (never used), and DOIs claimed by two entries with different abstract text
+   * (neither used; their citations are `no_abstract`).
+   */
+  abstractKeys: { given: number; unreadable: number; conflicting: number };
 }
 
 export interface CheckResult {

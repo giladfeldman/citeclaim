@@ -1,5 +1,5 @@
 import { canonicalSha256, sha256Hex } from './canonical.js';
-import { ineligibilityReason, normalizeDoi } from './eligibility.js';
+import { indexAbstracts, ineligibilityReason, normalizeDoi } from './eligibility.js';
 import { groupBySource } from './group.js';
 import { isTruncated, parseGroupAnswer } from './parse.js';
 import { DEFAULT_PROMPT_ID, promptSha256, renderPrompt } from './prompts/index.js';
@@ -73,10 +73,11 @@ export async function checkClaims(
   const items = new Map<string, ItemResult>();
   const eligible: CitationInput[] = [];
   const seen = new Set<string>();
+  const index = indexAbstracts(abstracts);
   for (const c of citations) {
     if (seen.has(c.id)) throw new Error(`duplicate citation id ${c.id}`);
     seen.add(c.id);
-    const reason = ineligibilityReason(c, abstracts);
+    const reason = ineligibilityReason(c, index);
     if (reason) items.set(c.id, emptyItem(c, reason));
     else eligible.push(c);
   }
@@ -84,7 +85,7 @@ export async function checkClaims(
   const groups = groupBySource(eligible, (c) => normalizeDoi(c.doi) as string, maxGroupSize);
   const calls: CallRecord[] = [];
   const tasks = groups.map((g, callIndex) => async () => {
-    const src = abstracts.get(g.doi) as SourceAbstract;
+    const src = index.byDoi.get(g.doi) as SourceAbstract;
     const abstract = src.abstract as string;
     const prompt = renderPrompt(promptId, {
       title: src.title, year: src.year, abstract, sentences: g.citations.map((c) => c.sentence as string),
@@ -154,6 +155,11 @@ export async function checkClaims(
       byVerdict,
       byReason,
       calls: calls.length,
+      abstractKeys: {
+        given: abstracts.size,
+        unreadable: index.unreadableKeys.length,
+        conflicting: index.conflicting.size,
+      },
     },
   };
 }
