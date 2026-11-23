@@ -3,7 +3,7 @@
  * DOI_START, SHORT_DOI_START, cleanDoiInput and its helpers), unchanged but for this header.
  * Same author and licence (AGPL-3.0-only). It is a copy, not a dependency, because citeclaim
  * has no runtime dependencies; tests/doiVectors.test.ts holds referencecheck v0.3.0's own
- * answers on 73 inputs and fails if the two readers drift (citeclaim v0.2.0 review 2).
+ * answers on 74 inputs and fails if the two readers drift (citeclaim v0.2.0 review 2).
  * Comments below are referencecheck's and refer to its review history.
  */
 
