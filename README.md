@@ -29,10 +29,11 @@ re-run important checks with a stronger model and read the source.
 - **DOIs.** One reader (`normalizeDoi`) handles the citation's DOI, the keys of
   the abstracts map and each abstract's own DOI: whitespace, a resolver URL
   (`https://doi.org/`, `dx.`, `www.`, bare `doi.org/`), a `doi:` label and
-  percent-encoding are removed, a link's `?query` / `#fragment` and trailing
-  punctuation are cut, and case is ignored, so a map keyed
-  `https://doi.org/10.1234/ABC` serves a citation whose DOI is `10.1234/abc`
-  (the same reading as referencecheck v0.3.0). Map keys that are not a DOI, and
+  percent-encoding are removed, a link's `?query` / `#fragment`, trailing
+  punctuation and a citation tail are cut, and case is ignored (it is
+  referencecheck v0.3.0's reader, copied, with test vectors that catch drift), so a map keyed
+  `https://doi.org/10.1234/ABC` serves a citation whose DOI is `10.1234/abc`.
+  Map keys that are not a DOI, and
   two usable entries for one DOI with different abstract text (neither is used),
   are counted in `summary.abstractKeys`; a stub or empty entry beside a usable
   one is ignored.

@@ -18,12 +18,17 @@ three readers of one value; they now share one rule, bound by a variant matrix
   bare `doi.org/`, a percent-encoded DOI (`10.1234%2Fabc`), and a `doi:` label in front of a
   resolver URL. Each gave `no_doi` (citation) or `no_abstract` (map key or record DOI). It also
   accepted strings with no `/` (`10.1234`) as a DOI; those are now `no_doi`.
-- **Release review (2026-11-24): a DOI is now read as referencecheck v0.3.0 reads it.** In a
-  resolver URL a `?query` or `#fragment` is cut (a final `#`, as in SICI DOIs, is kept; a `?`
-  decoded from `%3F` stays part of the DOI); a trailing `.`, `,`, `;`, `/` or unmatched `)` is
-  dropped; and the DOI shape is required (`10.` + 3-9 digits + `/` + a suffix without spaces), so
-  `10.1/x`, `10.abc/x` and `10.1000/ab cd` are `no_doi`. Before, `https://doi.org/10.1000/x?utm=1`
-  or `10.1000/x.` missed a map keyed `10.1000/x`, and the supplied abstract was reported missing.
+- **Release review (2026-11-24): a DOI is now read exactly as referencecheck v0.3.0 reads it.**
+  `normalizeDoi` is referencecheck v0.3.0's `cleanDoiInput` (copied into `src/doiClean.ts`, same
+  author and licence), lower-cased and required to have the DOI shape (`10.` + 3-9 digits + `/` + a
+  suffix without spaces). So a link's `?query` / `#fragment`, a bare `?key=value`, trailing slashes,
+  sentence punctuation (`. , ; :` and quotes), an unmatched closing bracket and a citation tail after
+  a space ("[preprint]", "Accessed 2020") are removed; an escape that would decode to whitespace
+  stays encoded. `tests/doiVectors.test.ts` holds referencecheck v0.3.0's own answers on 74 inputs
+  and fails if the two readers drift. Before, `https://doi.org/10.1000/x?utm=1` or `10.1000/x.`
+  missed a map keyed `10.1000/x`, and the supplied abstract was reported missing; `10.1/x` and
+  `10.1000/ab cd` are now `no_doi`; a shortDOI (`10/abc`) is `no_doi` (it cannot be matched to an
+  abstract without a lookup).
 - **Release review: a stub did not hide the real abstract.** Two entries for one DOI, one with no
   abstract, a stub under 200 characters or an own DOI naming another source, and one usable,
   counted as `conflicting` and both were dropped (`no_abstract`). Only usable entries now compete,
@@ -31,7 +36,8 @@ three readers of one value; they now share one rule, bound by a variant matrix
 
 ### Added
 - `summary.abstractKeys: { given, unreadable, conflicting, usable }` (`conflicting` counts DOIs,
-  not keys; `usable` is the DOIs left to look citations up in): map entries whose key is not a
+  not keys; `usable` counts DOIs whose record can be judged against: abstract of 200+ characters,
+  own DOI agreeing): map entries whose key is not a
   DOI, and DOIs claimed by two entries with different abstract text, were dropped without a
   count; a conflicting DOI is now not used at all (its citations are `no_abstract`) rather than
   using whichever entry came first.

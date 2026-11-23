@@ -1,53 +1,24 @@
+import { cleanDoiInput, DOI_SHAPE } from './doiClean.js';
 import type { AbstentionReason, CitationInput, SourceAbstract } from './types.js';
 
 /** Shortest abstract worth judging against; shorter "abstracts" are usually a title echo or a stub. */
 export const MIN_ABSTRACT_CHARS = 200;
 
-/** A resolver URL (`http(s)://`, `dx.` or `www.`, or bare `doi.org/`) or a `doi:` label. */
-const DOI_WRAPPER = /^(?:(?:https?:\/\/)?(?:dx\.|www\.)?doi\.org\/|doi:\s*)/i;
-
-/** A DOI: `10.`, a 3-9 digit registrant, `/`, a suffix without spaces (the shape referencecheck uses). */
-const DOI_SHAPE = /^10\.\d{3,9}\/\S+$/;
-
 /**
  * The one DOI reader in this library: the citation's DOI, the abstracts-map key
  * and the abstract record's own DOI all go through it, so one DOI written two
- * ways is one DOI. Surrounding whitespace, a resolver URL or a `doi:` label (also
- * both, as in `doi: https://doi.org/...`) are removed. In a resolver URL a
- * `?query` and a `#fragment` are cut (a final `#`, as in SICI DOIs, is kept),
- * before percent-decoding, so a `?` decoded from `%3F` stays part of the DOI.
- * A trailing `.`, `,`, `;`, `/` or an unmatched `)` (sentence punctuation) is
- * removed. The result is lower-cased (DOIs are case-insensitive) and must have
- * the DOI shape, else null (internal spaces, `10.1/x`, a shortDOI `10/abc`).
+ * ways is one DOI. It reads a DOI exactly as referencecheck v0.3.0 does
+ * (`cleanDoiInput`, copied into ./doiClean.ts): surrounding whitespace, a resolver
+ * URL or `doi:` label, a link's `?query` / `#fragment`, a bare `?key=value`,
+ * trailing slashes, sentence punctuation, an unmatched closing bracket and a
+ * citation tail after a space ("[preprint]", "Accessed 2020") are removed, and
+ * percent-encoding is decoded (unless it decodes to whitespace). The result is
+ * lower-cased (DOIs are case-insensitive) and must have the DOI shape
+ * (`10.` + 3-9 digits + `/` + a suffix without spaces), else null: a shortDOI
+ * (`10/abc`) cannot be matched to an abstract without a lookup, so it is no DOI here.
  */
 export function normalizeDoi(doi: string | null | undefined): string | null {
-  if (typeof doi !== 'string') return null;
-  let d = doi.trim();
-  let isLink = false;
-  for (let i = 0; i < 2; i++) {
-    const m = d.match(DOI_WRAPPER);
-    if (m) { if (/doi\.org\/$/i.test(m[0])) isLink = true; d = d.slice(m[0].length).trim(); }
-  }
-  if (isLink) {
-    d = d.replace(/\?.*$/s, '');
-    d = d.replace(/#(?!$).*$/s, '');
-  }
-  if (/%[0-9a-f]{2}/i.test(d)) {
-    try {
-      d = decodeURIComponent(d).trim();
-    } catch {
-      return null; // a broken percent-encoding cannot be read as a DOI
-    }
-  }
-  for (;;) {
-    const t = d.replace(/[.,;/]+$/, '');
-    const closes = (t.match(/\)/g) || []).length;
-    const opens = (t.match(/\(/g) || []).length;
-    const u = t.endsWith(')') && closes > opens ? t.slice(0, -1) : t;
-    if (u === d) break;
-    d = u;
-  }
-  d = d.toLowerCase();
+  const d = cleanDoiInput(doi).toLowerCase();
   return DOI_SHAPE.test(d) ? d : null;
 }
 
@@ -63,6 +34,8 @@ export interface AbstractIndex {
   conflicting: ReadonlySet<string>;
   /** Map keys that are not readable as a DOI (their entries are never used). */
   unreadableKeys: string[];
+  /** DOIs in byDoi whose record can be judged against (abstract long enough, own DOI agrees). */
+  usable: number;
 }
 
 /** A record that can be judged against for `doi`: an abstract long enough, and no own DOI naming another source. */
@@ -81,7 +54,7 @@ export function indexAbstracts(abstracts: ReadonlyMap<string, SourceAbstract>): 
     const doi = normalizeDoi(key);
     if (!doi) { unreadableKeys.push(key); continue; }
     const prev = byDoi.get(doi);
-    if (!prev) { byDoi.set(doi, rec); continue; }
+    if (!prev) { byDoi.set(doi, rec); continue; }  // kept even if unusable: its citations read no_abstract
     // Only records that could be judged against compete: a stub, a missing abstract or a
     // record naming another DOI beside the real one does not hide the real one (review 1).
     const prevOk = usableFor(prev, doi);
@@ -90,7 +63,9 @@ export function indexAbstracts(abstracts: ReadonlyMap<string, SourceAbstract>): 
     if (recOk && prev !== rec && !sameText(prev.abstract as string, rec.abstract as string)) conflicting.add(doi);
   }
   for (const d of conflicting) byDoi.delete(d);
-  return { byDoi, conflicting, unreadableKeys };
+  let usable = 0;
+  for (const [d, r] of byDoi) if (usableFor(r, d)) usable++;
+  return { byDoi, conflicting, unreadableKeys, usable };
 }
 
 function isIndex(x: ReadonlyMap<string, SourceAbstract> | AbstractIndex): x is AbstractIndex {
@@ -116,10 +91,9 @@ export function ineligibilityReason(
   if (!doi) return 'no_doi';
   if (!c.sentence || !c.sentence.trim()) return 'no_citing_sentence';
   const a = index.byDoi.get(doi);
-  if (!a || !a.abstract || a.abstract.trim().length < MIN_ABSTRACT_CHARS) return 'no_abstract';
-  // The map key is the host's claim about which source this abstract belongs to;
-  // the record carries its own DOI. If they disagree the abstract may be someone
-  // else's, so no verdict is attributed to this source.
-  if (a.doi && normalizeDoi(a.doi) !== doi) return 'no_abstract';
+  // One rule for "can be judged against", shared with indexAbstracts (review 2: two copies).
+  // It also refuses a record whose own DOI names another source: the map key is the host's
+  // claim, the record carries its own DOI, and if they disagree the abstract may be someone else's.
+  if (!usableFor(a, doi)) return 'no_abstract';
   return null;
 }

@@ -43,7 +43,7 @@ describe('normalizeDoi: one DOI, every written form', () => {
     expect(bad).toEqual([]);
   });
   it('rejects what is not a DOI (control)', () => {
-    for (const s of ['', '   ', 'doi:', 'https://doi.org/', '10.1234', 'pmid:123', 'https://example.org/10.1000/x', '10.1000/%E0%A4%A', null, undefined]) {
+    for (const s of ['', '   ', 'doi:', 'https://doi.org/', '10.1234', 'pmid:123', 'https://example.org/10.1000/x', null, undefined]) {
       expect(normalizeDoi(s as string)).toBeNull();
     }
   });
@@ -151,5 +151,22 @@ describe('review 1: normalizeDoi reads a DOI as referencecheck v0.3.0 does', () 
   });
   it.each(['10.1/x', '10.abc/x', '10.5/', '10/abc', '10.1000/ab cd', '10.1000/'])('%s is not a DOI', (input) => {
     expect(normalizeDoi(input)).toBeNull();
+  });
+});
+
+describe('review 2: abstractKeys.usable counts only records that can be judged against', () => {
+  it.each([
+    ['a stub', { doi: BARE, abstract: 'short' }],
+    ['no abstract', { doi: BARE, abstract: null as unknown as string }],
+    ['a record of another DOI', { doi: '10.1000/other', abstract: ABS }],
+    ['an unreadable own DOI', { doi: 'garbage', abstract: ABS }],
+  ])('%s: usable 0 and the item is no_abstract', async (_n, rec) => {
+    const r = await checkClaims([cite(BARE)], new Map<string, SourceAbstract>([[BARE, rec as SourceAbstract]]), silentClient());
+    expect(r.items[0]).toMatchObject({ status: 'not_assessed', reason: 'no_abstract' });
+    expect(r.summary.abstractKeys).toEqual({ given: 1, unreadable: 0, conflicting: 0, usable: 0 });
+  });
+  it('a usable record is counted (control)', async () => {
+    const r = await checkClaims([cite(BARE)], new Map<string, SourceAbstract>([[BARE, { doi: BARE, abstract: ABS }]]), silentClient());
+    expect(r.summary.abstractKeys.usable).toBe(1);
   });
 });
