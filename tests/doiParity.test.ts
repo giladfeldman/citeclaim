@@ -43,7 +43,7 @@ describe('normalizeDoi: one DOI, every written form', () => {
     expect(bad).toEqual([]);
   });
   it('rejects what is not a DOI (control)', () => {
-    for (const s of ['', '   ', 'doi:', 'https://doi.org/', '10.1234', 'pmid:123', 'https://example.org/10.1/x', '10.1/%E0%A4%A', null, undefined]) {
+    for (const s of ['', '   ', 'doi:', 'https://doi.org/', '10.1234', 'pmid:123', 'https://example.org/10.1000/x', '10.1000/%E0%A4%A', null, undefined]) {
       expect(normalizeDoi(s as string)).toBeNull();
     }
   });
@@ -64,14 +64,14 @@ describe('abstract lookup parity: citation DOI form x map-key form x record DOI 
     const r = await checkClaims([cite(BARE.toLowerCase())], abstracts, silentClient());
     expect(r.items[0]).toMatchObject({ status: 'judged', verdict: 'silent', reason: null, doi: BARE.toLowerCase() });
     expect(r.calls[0].doi).toBe(BARE.toLowerCase());
-    expect(r.summary.abstractKeys).toEqual({ given: 1, unreadable: 0, conflicting: 0 });
+    expect(r.summary.abstractKeys).toEqual({ given: 1, unreadable: 0, conflicting: 0, usable: 1 });
   });
   it('a different DOI is still no abstract (control)', () => {
     const abstracts = new Map<string, SourceAbstract>([['10.31234/osf.io/zzzzz', { doi: '10.31234/osf.io/zzzzz', abstract: ABS }]]);
     expect(ineligibilityReason(cite(BARE), abstracts)).toBe('no_abstract');
   });
   it('a record whose own DOI names another source is not attributed (control)', () => {
-    const abstracts = new Map<string, SourceAbstract>([[BARE, { doi: 'https://doi.org/10.1/other', abstract: ABS }]]);
+    const abstracts = new Map<string, SourceAbstract>([[BARE, { doi: 'https://doi.org/10.1000/other', abstract: ABS }]]);
     expect(ineligibilityReason(cite(BARE), abstracts)).toBe('no_abstract');
   });
 });
@@ -83,7 +83,7 @@ describe('abstracts map: entries that cannot be used are counted, not dropped si
       [BARE, { doi: BARE, abstract: ABS }],
     ]);
     const r = await checkClaims([cite(BARE)], abstracts, silentClient());
-    expect(r.summary.abstractKeys).toEqual({ given: 2, unreadable: 1, conflicting: 0 });
+    expect(r.summary.abstractKeys).toEqual({ given: 2, unreadable: 1, conflicting: 0, usable: 1 });
     expect(indexAbstracts(abstracts).unreadableKeys).toEqual(['not a doi']);
   });
   it('two keys for one DOI with different abstracts: neither is used, and it is counted', async () => {
@@ -93,7 +93,7 @@ describe('abstracts map: entries that cannot be used are counted, not dropped si
     ]);
     const r = await checkClaims([cite(BARE)], abstracts, silentClient());
     expect(r.items[0]).toMatchObject({ status: 'not_assessed', reason: 'no_abstract' });
-    expect(r.summary.abstractKeys).toEqual({ given: 2, unreadable: 0, conflicting: 1 });
+    expect(r.summary.abstractKeys).toEqual({ given: 2, unreadable: 0, conflicting: 1, usable: 0 });
   });
   it('two keys for one DOI with the same abstract are one source (control)', async () => {
     const abstracts = new Map<string, SourceAbstract>([
@@ -103,5 +103,53 @@ describe('abstracts map: entries that cannot be used are counted, not dropped si
     const r = await checkClaims([cite(BARE)], abstracts, silentClient());
     expect(r.items[0].status).toBe('judged');
     expect(r.summary.abstractKeys.conflicting).toBe(0);
+  });
+});
+
+/**
+ * Review 1 of v0.2.0 (2026-11-24, consult seat Sonnet + own reproduction). Class: "one
+ * fact read differently by different readers": the DOI as referencecheck v0.3.0 reads it
+ * (link tails cut, sentence punctuation dropped, DOI shape required), and an abstracts map
+ * whose second entry for one DOI is a stub, an empty abstract or another source's record.
+ */
+describe('review 1: a usable abstract is not hidden by an unusable entry for the same DOI', () => {
+  const STUBS: Array<[string, SourceAbstract]> = [
+    ['null abstract', { doi: BARE, abstract: null as unknown as string }],
+    ['short stub', { doi: BARE, abstract: 'Too short.' }],
+    ['record of another DOI', { doi: '10.9999/other', abstract: `${ABS} Other paper.` }],
+  ];
+  for (const [name, stub] of STUBS) for (const stubFirst of [true, false]) {
+    it(`${name}, ${stubFirst ? 'before' : 'after'} the real one: judged, not conflicting`, async () => {
+      const real: [string, SourceAbstract] = [`doi:${BARE}`, { doi: BARE, abstract: ABS }];
+      const s: [string, SourceAbstract] = [BARE, stub];
+      const abstracts = new Map<string, SourceAbstract>(stubFirst ? [s, real] : [real, s]);
+      const r = await checkClaims([cite(BARE)], abstracts, silentClient());
+      expect(r.items[0].status).toBe('judged');
+      expect(r.summary.abstractKeys).toEqual({ given: 2, unreadable: 0, conflicting: 0, usable: 1 });
+    });
+  }
+  it('the same text with other whitespace is one abstract', () => {
+    const abstracts = new Map<string, SourceAbstract>([
+      [BARE, { doi: BARE, abstract: ABS }],
+      [`https://doi.org/${BARE}`, { doi: BARE, abstract: `  ${ABS.replace(/ /g, '\n  ')} ` }],
+    ]);
+    expect(indexAbstracts(abstracts).conflicting.size).toBe(0);
+    expect(ineligibilityReason(cite(BARE), abstracts)).toBeNull();
+  });
+});
+
+describe('review 1: normalizeDoi reads a DOI as referencecheck v0.3.0 does', () => {
+  const D = '10.1000/xyz.123';
+  it.each([
+    [`https://doi.org/${D}?utm_source=x`, D], [`https://doi.org/${D}#sec1`, D], [`https://doi.org/${D}?a=1#b`, D],
+    [`${D}.`, D], [`${D},`, D], [`${D};`, D], [`https://doi.org/${D}/`, D], [`(${D})`.slice(1), D],
+    ['10.1002/(sici)1097-4571(199806)49:8<693::aid-asi4>3.0.co;2-#', '10.1002/(sici)1097-4571(199806)49:8<693::aid-asi4>3.0.co;2-#'],
+    ['https://doi.org/10.1002/(SICI)1097-4571(199806)49:8<693::AID-ASI4>3.0.CO;2-#?utm=1', '10.1002/(sici)1097-4571(199806)49:8<693::aid-asi4>3.0.co;2-#'],
+    ['https://doi.org/10.1000/a%3Fb', '10.1000/a?b'], ['10.1000/a(b)', '10.1000/a(b)'],
+  ])('%s -> %s', (input, want) => {
+    expect(normalizeDoi(input)).toBe(want);
+  });
+  it.each(['10.1/x', '10.abc/x', '10.5/', '10/abc', '10.1000/ab cd', '10.1000/'])('%s is not a DOI', (input) => {
+    expect(normalizeDoi(input)).toBeNull();
   });
 });

@@ -6,13 +6,13 @@ import type { CitationInput, LlmClient, LlmRequest, SourceAbstract } from '../sr
 const ABS_A = 'Sleep deprivation reduced working-memory accuracy in 48 undergraduates. '.repeat(4);
 const ABS_B = 'A randomized trial of 300 adults found that mindfulness training lowered anxiety scores. '.repeat(3);
 const abstracts = new Map<string, SourceAbstract>([
-  ['10.1/a', { doi: '10.1/a', title: 'A', year: 2019, abstract: ABS_A, source: 'openalex' }],
-  ['10.1/b', { doi: '10.1/b', title: 'B', year: 2020, abstract: ABS_B, source: 'crossref' }],
-  ['10.1/short', { doi: '10.1/short', title: 'S', year: 2020, abstract: 'Too short.', source: 'crossref' }],
+  ['10.1000/a', { doi: '10.1000/a', title: 'A', year: 2019, abstract: ABS_A, source: 'openalex' }],
+  ['10.1000/b', { doi: '10.1000/b', title: 'B', year: 2020, abstract: ABS_B, source: 'crossref' }],
+  ['10.1000/short', { doi: '10.1000/short', title: 'S', year: 2020, abstract: 'Too short.', source: 'crossref' }],
 ]);
 
 const cite = (id: string, over: Partial<CitationInput> = {}): CitationInput => ({
-  id, referenceKey: 'ref-a', doi: '10.1/a', linkStatus: 'matched', sourceCount: 1,
+  id, referenceKey: 'ref-a', doi: '10.1000/a', linkStatus: 'matched', sourceCount: 1,
   sentence: `Sentence ${id} about sleep.`, ...over,
 });
 
@@ -42,8 +42,8 @@ describe('eligibility', () => {
       cite('multi', { sourceCount: 3 }),
       cite('nodoi', { doi: null }),
       cite('nosent', { sentence: '  ' }),
-      cite('noabs', { doi: '10.1/missing' }),
-      cite('short', { doi: '10.1/short' }),
+      cite('noabs', { doi: '10.1000/missing' }),
+      cite('short', { doi: '10.1000/short' }),
       cite('nokey', { referenceKey: null }),
     ];
     const client = fakeClient();
@@ -64,7 +64,7 @@ describe('eligibility', () => {
   });
 
   it('accepts a doi.org URL as the DOI', async () => {
-    const r = await checkClaims([cite('u', { doi: 'https://doi.org/10.1/A' })], abstracts, fakeClient());
+    const r = await checkClaims([cite('u', { doi: 'https://doi.org/10.1000/A' })], abstracts, fakeClient());
     expect(r.items[0].status).toBe('judged');
   });
 
@@ -75,7 +75,7 @@ describe('eligibility', () => {
 
 describe('grouping', () => {
   it('one call per source; every sentence gets its own verdict; input order kept', async () => {
-    const cs = [cite('a1'), cite('b1', { referenceKey: 'ref-b', doi: '10.1/b' }), cite('a2'), cite('a3')];
+    const cs = [cite('a1'), cite('b1', { referenceKey: 'ref-b', doi: '10.1000/b' }), cite('a2'), cite('a3')];
     const client = fakeClient();
     const r = await checkClaims(cs, abstracts, client);
     expect(client.requests).toHaveLength(2);
@@ -88,9 +88,9 @@ describe('grouping', () => {
 
   it('splits a source cited more than maxGroupSize times into chunks', () => {
     const cs = Array.from({ length: 7 }, (_, i) => cite(`a${i}`));
-    const g = groupBySource(cs, () => '10.1/a', 3);
+    const g = groupBySource(cs, () => '10.1000/a', 3);
     expect(g.map((x) => x.citations.length)).toEqual([3, 3, 1]);
-    expect(() => groupBySource(cs, () => '10.1/a', 0)).toThrow();
+    expect(() => groupBySource(cs, () => '10.1000/a', 0)).toThrow();
   });
 });
 

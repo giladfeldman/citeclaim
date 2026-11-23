@@ -159,6 +159,7 @@ export async function checkClaims(
         given: abstracts.size,
         unreadable: index.unreadableKeys.length,
         conflicting: index.conflicting.size,
+        usable: index.byDoi.size,
       },
     },
   };

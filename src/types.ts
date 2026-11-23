@@ -63,7 +63,8 @@ export interface SourceAbstract {
   title?: string | null;
   year?: number | null;
   abstract: string | null;
-  /** Where the abstract came from (crossref, openalex, ...), recorded for provenance. */
+  /** Where the abstract came from (crossref, openalex, ...). The host's own record: this library
+   *  does not read it or copy it into the result. */
   source?: string | null;
 }
 
@@ -153,7 +154,10 @@ export interface CheckSummary {
    * DOI (never used), and DOIs claimed by two entries with different abstract text
    * (neither used; their citations are `no_abstract`).
    */
-  abstractKeys: { given: number; unreadable: number; conflicting: number };
+  /** The abstracts map: `given` map keys, `unreadable` keys (not a DOI), `conflicting` DOIs
+   *  (two usable entries with different text; counted once per DOI, not per key), and `usable`
+   *  DOIs left to look citations up in. */
+  abstractKeys: { given: number; unreadable: number; conflicting: number; usable: number };
 }
 
 export interface CheckResult {

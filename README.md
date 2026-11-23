@@ -29,10 +29,13 @@ re-run important checks with a stronger model and read the source.
 - **DOIs.** One reader (`normalizeDoi`) handles the citation's DOI, the keys of
   the abstracts map and each abstract's own DOI: whitespace, a resolver URL
   (`https://doi.org/`, `dx.`, `www.`, bare `doi.org/`), a `doi:` label and
-  percent-encoding are removed and case is ignored, so a map keyed
-  `https://doi.org/10.1234/ABC` serves a citation whose DOI is `10.1234/abc`.
-  Map keys that are not a DOI, and two keys for one DOI with different abstract
-  text (neither is used), are counted in `summary.abstractKeys`.
+  percent-encoding are removed, a link's `?query` / `#fragment` and trailing
+  punctuation are cut, and case is ignored, so a map keyed
+  `https://doi.org/10.1234/ABC` serves a citation whose DOI is `10.1234/abc`
+  (the same reading as referencecheck v0.3.0). Map keys that are not a DOI, and
+  two usable entries for one DOI with different abstract text (neither is used),
+  are counted in `summary.abstractKeys`; a stub or empty entry beside a usable
+  one is ignored.
 - **Per-source grouping.** All eligible citations of one source are judged in
   one call (the abstract is sent once; each sentence still gets its own
   verdict). Sources cited more than `maxGroupSize` times (default 6) are split.

@@ -43,18 +43,18 @@ describe('item ids (Sol, Sonnet D1/D2)', () => {
 describe('grouping keys on reference AND doi (Sol)', () => {
   it('two DOIs under one reference key are never judged against one abstract', () => {
     const cs: CitationInput[] = [
-      { id: 'a', referenceKey: 'r1', doi: '10.1/a', linkStatus: 'matched', sourceCount: 1, sentence: 'S1' },
-      { id: 'b', referenceKey: 'r1', doi: '10.1/b', linkStatus: 'matched', sourceCount: 1, sentence: 'S2' },
+      { id: 'a', referenceKey: 'r1', doi: '10.1000/a', linkStatus: 'matched', sourceCount: 1, sentence: 'S1' },
+      { id: 'b', referenceKey: 'r1', doi: '10.1000/b', linkStatus: 'matched', sourceCount: 1, sentence: 'S2' },
     ];
     const g = groupBySource(cs, (c) => c.doi as string, 6);
-    expect(g.map((x) => [x.doi, x.citations.map((c) => c.id)])).toEqual([['10.1/a', ['a']], ['10.1/b', ['b']]]);
+    expect(g.map((x) => [x.doi, x.citations.map((c) => c.id)])).toEqual([['10.1000/a', ['a']], ['10.1000/b', ['b']]]);
   });
 
   it('end to end, each sentence is sent with its own abstract', async () => {
     const long = (w: string) => `${w} `.repeat(60);
     const abstracts = new Map<string, SourceAbstract>([
-      ['10.1/a', { doi: '10.1/a', abstract: long('alpha') }],
-      ['10.1/b', { doi: '10.1/b', abstract: long('beta') }],
+      ['10.1000/a', { doi: '10.1000/a', abstract: long('alpha') }],
+      ['10.1000/b', { doi: '10.1000/b', abstract: long('beta') }],
     ]);
     const seen: string[] = [];
     const client: LlmClient = {
@@ -64,8 +64,8 @@ describe('grouping keys on reference AND doi (Sol)', () => {
       },
     };
     await checkClaims([
-      { id: 'a', referenceKey: 'r1', doi: '10.1/a', linkStatus: 'matched', sourceCount: 1, sentence: 'S1' },
-      { id: 'b', referenceKey: 'r1', doi: '10.1/b', linkStatus: 'matched', sourceCount: 1, sentence: 'S2' },
+      { id: 'a', referenceKey: 'r1', doi: '10.1000/a', linkStatus: 'matched', sourceCount: 1, sentence: 'S1' },
+      { id: 'b', referenceKey: 'r1', doi: '10.1000/b', linkStatus: 'matched', sourceCount: 1, sentence: 'S2' },
     ], abstracts, client);
     expect(seen.sort()).toEqual(['alpha', 'beta']);
   });
@@ -106,7 +106,7 @@ const QUOTE_PARITY_SHA256 = 'd1e4d73d74cb52269f79c0ac17299bf41512ffa820199f67b8b
 describe('review-pass regressions (2026-10-14)', () => {
   const long = 'Sleep restriction reduced recall in undergraduates. '.repeat(8);
   const cite = (id: string): CitationInput => (
-    { id, referenceKey: 'r', doi: '10.1/a', linkStatus: 'matched', sourceCount: 1, sentence: `S ${id}` });
+    { id, referenceKey: 'r', doi: '10.1000/a', linkStatus: 'matched', sourceCount: 1, sentence: `S ${id}` });
   const client: LlmClient = {
     complete: async () => ({
       text: ans([{ id: 1, verdict: 'consistent', evidence_quote: 'reduced recall', reason: '' }]), callConfig: {},
@@ -114,14 +114,14 @@ describe('review-pass regressions (2026-10-14)', () => {
   };
 
   it('a non-integer or non-positive concurrency is refused, not run with zero workers', async () => {
-    const abstracts = new Map<string, SourceAbstract>([['10.1/a', { doi: '10.1/a', abstract: long }]]);
+    const abstracts = new Map<string, SourceAbstract>([['10.1000/a', { doi: '10.1000/a', abstract: long }]]);
     for (const concurrency of [NaN, 0, -1, 1.5]) {
       await expect(checkClaims([cite('a')], abstracts, client, { concurrency })).rejects.toThrow(/concurrency/);
     }
   });
 
   it('an abstract record whose own DOI differs from its map key is not used', async () => {
-    const abstracts = new Map<string, SourceAbstract>([['10.1/a', { doi: '10.9/other', abstract: long }]]);
+    const abstracts = new Map<string, SourceAbstract>([['10.1000/a', { doi: '10.9000/other', abstract: long }]]);
     const r = await checkClaims([cite('a')], abstracts, client);
     expect(r.items[0].status).toBe('not_assessed');
     expect(r.items[0].reason).toBe('no_abstract');
